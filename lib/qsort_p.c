@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
+#include "qsort_p.h"
 
 int comp_int(const void* a, const void* b)
 {

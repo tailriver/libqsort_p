@@ -1,1 +1,1 @@
-SUBDIRS = lib test
+SUBDIRS = include lib test

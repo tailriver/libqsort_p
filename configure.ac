@@ -10,9 +10,8 @@ AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign])
 
 # Checks for programs.
-AC_PROG_CC
+LT_INIT([disable-shared])
 AC_PROG_FC
-LT_INIT
 
 # Checks for libraries.
 
@@ -24,5 +23,5 @@ AC_TYPE_SIZE_T
 
 # Checks for library functions.
 
-AC_CONFIG_FILES([Makefile lib/Makefile test/Makefile])
+AC_CONFIG_FILES([Makefile include/Makefile lib/Makefile test/Makefile])
 AC_OUTPUT
