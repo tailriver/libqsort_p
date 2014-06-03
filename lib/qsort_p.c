@@ -1,17 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <omp.h>
 #include "qsort_p.h"
-
-int comp_int(const void* a, const void* b)
-{
-    int aa = *(int*) a;
-    int bb = *(int*) b;
-
-    if (aa < bb) return 1;
-    if (aa > bb) return -1;
-    return 0;
-}
 
 
 static void swap(void* a, void* b, size_t size)
@@ -26,83 +14,111 @@ static void swap(void* a, void* b, size_t size)
 }
 
 
-void qsort_p(void* base, size_t num, size_t size, int (*compar)(const void*, const void*))
+static void qsort_p_recursive(
+        void* base,
+        size_t num,
+        size_t size,
+        int (*compar)(const void*, const void*),
+        size_t threshold)
 {
-    if (num == 1) return;
+    const int beg = 0;
+    const int mid = num / 2;
+    const int end = num - 1;
+    int comp1, comp2, comp3;
+    int piv, i, j;
 
-    #pragma omp critical
-    {
-    int i;
-    int rank;
-    rank = omp_get_thread_num();
-    printf("rank %d: [%d]", rank, num);
-    for (i = 0; i < num; ++i) {
-        printf(" %d", ((int*)base)[i]);
-    }
-    printf("\n");
-    }
-
-    if (num == 2) {
-        printf("a=%d b=%d\n", *(int*)base, *(int*)(base+size));
-        printf("compar: %d\n", compar(base, base + size));
-        if (compar(base, base + size) == -1) {
-            swap(base, base + size, size);
+    /* fast return */
+    if (num < 3) {
+        if (num == 2) {
+            if (compar(base, base + size) == -1) {
+                swap(base, base + size, size);
+            }
         }
         return;
     }
 
-    if (num > 1) {
-        int comp1, comp2;
-        int mid, end;
-        mid = num / 2;
-        end = num - 1;
+    /* select a pivot */
+    comp1 = compar(base + beg * size, base + mid * size);
+    comp2 = compar(base + mid * size, base + end * size);
+    i = beg;
+    j = end;
 
-        comp1 = compar(base, base + mid * size);
-        comp2 = compar(base + mid * size, base + end * size);
-        /*
+    if (comp1 == 0 || comp2 == 0 || comp1 + comp2 != 0) {
+        /* c1 c2
          *  0  * : end <= mid = beg or beg = mid <= end
          *  *  0 : beg <= mid = end or end = mid <= beg
          *  1  1 : beg < mid < end
          * -1 -1 : end > mid > beg
-         *  1 -1 : beg < end < mid or end < beg < mid
-         * -1  1 : mid < beg < end or mid < end < beg
          */
-        if (comp1 == 0 || comp2 == 0 || comp1 + comp2 != 0) {
+        piv = mid;
+    } else {
+        /* c1 c2 c3
+         *  1 -1  1 : beg < end < mid
+         *  1 -1  0 : beg = end < mid
+         *  1 -1 -1 : end < beg < mid
+         * -1  1  1 : mid < beg < end
+         * -1  1  0 : mid < beg = end
+         * -1  1 -1 : mid < end < beg
+         */
+        comp3 = compar(base + beg * size, base + end * size);
+        piv = comp1 == comp3 ? end : beg;
+    }
 
-        } else {
-            int comp3;
-            comp3 = compar(base, base + end * size);
-
+    /* sort */
+    while (1) {
+        while (i <= end && compar(base + i * size, base + piv * size) > 0) {
+            ++i;
+        }
+        while (j >= beg && compar(base + j * size, base + piv * size) < 0) {
+            --j;
         }
 
-  //      pivots[0] = base
+        if (i < j) {
+            swap(base + i * size, base + j * size, size);
 
+            if (i == piv) {
+                piv = j;
+            } else if (j == piv) {
+                piv = i;
+            }
+
+            ++i;
+            --j;
+        } else {
+            piv = i == num ? j : i;
+            break;
+        }
+    }
+
+    /* recursion (we have to care about the number of threads) */
+    if (piv > threshold && num - piv > threshold) {
         #pragma omp parallel sections
         {
             #pragma omp section
-            qsort_p(base, mid, size, compar);
+            qsort_p_recursive(base, piv, size, compar, threshold);
             #pragma omp section
-            qsort_p(base + mid * size, num - mid, size, compar);
+            qsort_p_recursive(base + piv * size, num - piv, size, compar, threshold);
         }
+    } else {
+        qsort_p_recursive(base, piv, size, compar, threshold);
+        qsort_p_recursive(base + piv * size, num - piv, size, compar, threshold);
     }
 }
 
 
-int main(void)
+void qsort_p(void* base, size_t num, size_t size, int (*compar)(const void*, const void*))
 {
-    int threads;
-    int a[256], i;
+    int threshold, nested_saved;
 
-    threads = omp_get_max_threads();
+    threshold = num / omp_get_max_threads() / 10; /* heuristic parameter */
+    if (threshold < 2) {
+        threshold = 2;
+    }
+
+    nested_saved = omp_get_nested();
     omp_set_nested(1);
-    printf("max_threads = %d\n", threads);
 
-    for (i = 0; i < 256; ++i)
-        a[i] = 255 - i;
+    qsort_p_recursive(base, num, size, compar, threshold);
 
-    qsort_p(a, 256, sizeof(*a), comp_int);
-
-    for (i = 0; i < 256; ++i)
-        printf("%d ", a[i]);
-    printf("\n");
+    omp_set_nested(nested_saved);
 }

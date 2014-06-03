@@ -79,7 +79,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 noinst_PROGRAMS = example$(EXEEXT) benchmark$(EXEEXT) \
-	stability_check$(EXEEXT) fortran_mangling$(EXEEXT)
+	fortran_mangling$(EXEEXT)
 subdir = test
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/build-aux/depcomp
@@ -111,10 +111,6 @@ am_fortran_mangling_OBJECTS = fortran_mangling.$(OBJEXT)
 fortran_mangling_OBJECTS = $(am_fortran_mangling_OBJECTS)
 fortran_mangling_LDADD = $(LDADD)
 fortran_mangling_DEPENDENCIES = $(top_builddir)/lib/libqsort_p.la
-am_stability_check_OBJECTS = stability_check.$(OBJEXT)
-stability_check_OBJECTS = $(am_stability_check_OBJECTS)
-stability_check_LDADD = $(LDADD)
-stability_check_DEPENDENCIES = $(top_builddir)/lib/libqsort_p.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -165,9 +161,9 @@ am__v_FCLD_ = $(am__v_FCLD_@AM_DEFAULT_V@)
 am__v_FCLD_0 = @echo "  FCLD    " $@;
 am__v_FCLD_1 = 
 SOURCES = $(benchmark_SOURCES) $(example_SOURCES) \
-	$(fortran_mangling_SOURCES) $(stability_check_SOURCES)
+	$(fortran_mangling_SOURCES)
 DIST_SOURCES = $(benchmark_SOURCES) $(example_SOURCES) \
-	$(fortran_mangling_SOURCES) $(stability_check_SOURCES)
+	$(fortran_mangling_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -311,9 +307,9 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I $(top_srcdir)/include
+AM_CFLAGS = -fopenmp
 example_SOURCES = example.c
 benchmark_SOURCES = benchmark.c
-stability_check_SOURCES = stability_check.c
 fortran_mangling_SOURCES = fortran_mangling.f90
 LDADD = $(top_builddir)/lib/libqsort_p.la
 all: all-am
@@ -372,10 +368,6 @@ fortran_mangling$(EXEEXT): $(fortran_mangling_OBJECTS) $(fortran_mangling_DEPEND
 	@rm -f fortran_mangling$(EXEEXT)
 	$(AM_V_FCLD)$(FCLINK) $(fortran_mangling_OBJECTS) $(fortran_mangling_LDADD) $(LIBS)
 
-stability_check$(EXEEXT): $(stability_check_OBJECTS) $(stability_check_DEPENDENCIES) $(EXTRA_stability_check_DEPENDENCIES) 
-	@rm -f stability_check$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(stability_check_OBJECTS) $(stability_check_LDADD) $(LIBS)
-
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -384,7 +376,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/benchmark.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/example.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stability_check.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
