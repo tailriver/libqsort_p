@@ -1,4 +1,5 @@
 #include <omp.h>
+#include "config.h"
 #include "qsort_p.h"
 
 
@@ -124,7 +125,11 @@ void qsort_p(void* base, size_t num, size_t size, int (*compar)(const void*, con
 }
 
 
-void qsort_p_(void* base, int* num, int* size, int (*compar)(const void*, const void*))
+void FC_FUNC(qsort_p, QSORT_P)(
+        void* base,
+        int* num,
+        int* size,
+        int (*compar)(const void*, const void*))
 {
     qsort_p(base, *num, *size, compar);
 }
