@@ -122,3 +122,9 @@ void qsort_p(void* base, size_t num, size_t size, int (*compar)(const void*, con
 
     omp_set_nested(nested_saved);
 }
+
+
+void qsort_p_(void* base, int* num, int* size, int (*compar)(const void*, const void*))
+{
+    qsort_p(base, *num, *size, compar);
+}
