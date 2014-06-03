@@ -1,5 +1,6 @@
 #include <stdio.h>
-#include <stdlib.h>
+#include <time.h>
+#include "qsort_p.h"
 
 
 static int comp_int(const void* a, const void* b)

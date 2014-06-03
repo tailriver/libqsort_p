@@ -13,6 +13,13 @@ AM_INIT_AUTOMAKE([foreign])
 LT_INIT([disable-shared])
 AC_PROG_FC
 
+AC_LANG_PUSH([C])
+AX_OPENMP
+AC_LANG_POP([C])
+AC_LANG_PUSH([Fortran])
+AX_OPENMP
+AC_LANG_POP([Fortran])
+
 # Checks for libraries.
 
 # Checks for header files.
@@ -22,6 +29,9 @@ AC_CHECK_HEADERS
 AC_TYPE_SIZE_T
 
 # Checks for library functions.
+
+CFLAGS="$CFLAGS $OPENMP_CFLAGS"
+FCFLAGS="$FCFLAGS $OPENMP_FCFLAGS"
 
 AC_CONFIG_FILES([Makefile include/Makefile lib/Makefile test/Makefile])
 AC_OUTPUT

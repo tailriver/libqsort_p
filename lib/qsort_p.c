@@ -30,16 +30,16 @@ static void qsort_p_recursive(
     /* fast return */
     if (num < 3) {
         if (num == 2) {
-            if (compar(base, base + size) == -1) {
-                swap(base, base + size, size);
+            if (compar(base, (char*)base + size) == -1) {
+                swap(base, (char*)base + size, size);
             }
         }
         return;
     }
 
     /* select a pivot */
-    comp1 = compar(base + beg * size, base + mid * size);
-    comp2 = compar(base + mid * size, base + end * size);
+    comp1 = compar((char*)base + beg * size, (char*)base + mid * size);
+    comp2 = compar((char*)base + mid * size, (char*)base + end * size);
     i = beg;
     j = end;
 
@@ -60,21 +60,21 @@ static void qsort_p_recursive(
          * -1  1  0 : mid < beg = end
          * -1  1 -1 : mid < end < beg
          */
-        comp3 = compar(base + beg * size, base + end * size);
+        comp3 = compar((char*)base + beg * size, (char*)base + end * size);
         piv = comp1 == comp3 ? end : beg;
     }
 
     /* sort */
     while (1) {
-        while (i <= end && compar(base + i * size, base + piv * size) > 0) {
+        while (i <= end && compar((char*)base + i * size, (char*)base + piv * size) > 0) {
             ++i;
         }
-        while (j >= beg && compar(base + j * size, base + piv * size) < 0) {
+        while (j >= beg && compar((char*)base + j * size, (char*)base + piv * size) < 0) {
             --j;
         }
 
         if (i < j) {
-            swap(base + i * size, base + j * size, size);
+            swap((char*)base + i * size, (char*)base + j * size, size);
 
             if (i == piv) {
                 piv = j;
@@ -97,11 +97,11 @@ static void qsort_p_recursive(
             #pragma omp section
             qsort_p_recursive(base, piv, size, compar, threshold);
             #pragma omp section
-            qsort_p_recursive(base + piv * size, num - piv, size, compar, threshold);
+            qsort_p_recursive((char*)base + piv * size, num - piv, size, compar, threshold);
         }
     } else {
         qsort_p_recursive(base, piv, size, compar, threshold);
-        qsort_p_recursive(base + piv * size, num - piv, size, compar, threshold);
+        qsort_p_recursive((char*)base + piv * size, num - piv, size, compar, threshold);
     }
 }
 

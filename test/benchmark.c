@@ -1,5 +1,6 @@
-#include <stdio.h>
 #include <omp.h>
+#include <stdio.h>
+#include <time.h>
 #include "qsort_p.h"
 
 
@@ -23,7 +24,7 @@ double benchmark(size_t size)
     array = malloc(size * sizeof *array);
     if (array == NULL) {
         fprintf(stderr, "malloc error\n");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     /* fill */
@@ -45,14 +46,14 @@ double benchmark(size_t size)
 
 int main(void)
 {
-    size_t size = 4096;
+    int size = 4096;
     double elapsed_time = 0.0;
 
     printf("Number of threads: %d\n", omp_get_max_threads());
-    printf("array size   | elapsed time [ms]\n");
+    printf("array size | elapsed time [ms]\n");
     while (elapsed_time < 60) {
         elapsed_time = benchmark(size);
-        printf("%12i | %8.3f\n", size, elapsed_time * 1000);
+        printf("%10i | %10.3f\n", size, elapsed_time * 1000);
 
         size *= 2;
     }
