@@ -1,3 +1,4 @@
+#include <memory.h>
 #include <omp.h>
 #include "config.h"
 #include "qsort_p.h"
@@ -23,49 +24,58 @@ static void qsort_p_recursive(
         size_t threshold)
 {
     const int beg = 0;
-    const int mid = num / 2;
     const int end = num - 1;
-    int comp1, comp2, comp3;
+    void* comp;
     int piv, i, j;
 
     /* fast return */
-    if (num < 3) {
-        if (num == 2) {
-            if (compar(base, (char*)base + size) == -1) {
-                swap(base, (char*)base + size, size);
-            }
+    if (num < threshold) {
+        if (num > 1) {
+            qsort(base, num, size, compar);
         }
         return;
     }
 
-    /* select a pivot */
-    comp1 = compar((char*)base + beg * size, (char*)base + mid * size);
-    comp2 = compar((char*)base + mid * size, (char*)base + end * size);
-    i = beg;
-    j = end;
+    /* select a pivot (find median from seven points) */
+    comp = malloc(7 * size);
+    if (comp != NULL && threshold > 6) {
+        const int m01 = beg + 1;
+        const int m02 = num / 2 - 1;
+        const int m03 = num / 2;
+        const int m04 = num / 2 + 1;
+        const int m05 = end - 1;
 
-    if (comp1 == 0 || comp2 == 0 || comp1 + comp2 != 0) {
-        /* c1 c2
-         *  0  * : end <= mid = beg or beg = mid <= end
-         *  *  0 : beg <= mid = end or end = mid <= beg
-         *  1  1 : beg < mid < end
-         * -1 -1 : end > mid > beg
-         */
-        piv = mid;
+        memcpy((char*)comp + 0 * size, (char*)base + beg * size, size);
+        memcpy((char*)comp + 1 * size, (char*)base + m01 * size, size);
+        memcpy((char*)comp + 2 * size, (char*)base + m02 * size, size);
+        memcpy((char*)comp + 3 * size, (char*)base + m03 * size, size);
+        memcpy((char*)comp + 4 * size, (char*)base + m04 * size, size);
+        memcpy((char*)comp + 5 * size, (char*)base + m05 * size, size);
+        memcpy((char*)comp + 6 * size, (char*)base + end * size, size);
+        qsort(comp, 7, size, compar);
+        if (memcmp((char*)base + beg * size, (char*)comp + 3 * size, size) == 0) {
+            piv = beg;
+        } else if (memcmp((char*)base + m01 * size, (char*)comp + 3 * size, size) == 0) {
+            piv = m01;
+        } else if (memcmp((char*)base + m02 * size, (char*)comp + 3 * size, size) == 0) {
+            piv = m02;
+        } else if (memcmp((char*)base + m03 * size, (char*)comp + 3 * size, size) == 0) {
+            piv = m03;
+        } else if (memcmp((char*)base + m04 * size, (char*)comp + 3 * size, size) == 0) {
+            piv = m04;
+        } else if (memcmp((char*)base + m05 * size, (char*)comp + 3 * size, size) == 0) {
+            piv = m05;
+        } else {
+            piv = end;
+        }
+        free(comp);
     } else {
-        /* c1 c2 c3
-         *  1 -1  1 : beg < end < mid
-         *  1 -1  0 : beg = end < mid
-         *  1 -1 -1 : end < beg < mid
-         * -1  1  1 : mid < beg < end
-         * -1  1  0 : mid < beg = end
-         * -1  1 -1 : mid < end < beg
-         */
-        comp3 = compar((char*)base + beg * size, (char*)base + end * size);
-        piv = comp1 == comp3 ? end : beg;
+        piv = end;
     }
 
     /* sort */
+    i = beg;
+    j = end;
     while (1) {
         while (i <= end && compar((char*)base + i * size, (char*)base + piv * size) > 0) {
             ++i;
@@ -101,8 +111,8 @@ static void qsort_p_recursive(
             qsort_p_recursive((char*)base + piv * size, num - piv, size, compar, threshold);
         }
     } else {
-        qsort_p_recursive(base, piv, size, compar, threshold);
-        qsort_p_recursive((char*)base + piv * size, num - piv, size, compar, threshold);
+        qsort(base, piv, size, compar);
+        qsort((char*)base + piv * size, num - piv, size, compar);
     }
 }
 
@@ -112,8 +122,8 @@ void qsort_p(void* base, size_t num, size_t size, int (*compar)(const void*, con
     int threshold, nested_saved;
 
     threshold = num / omp_get_max_threads() / 10; /* heuristic parameter */
-    if (threshold < 2) {
-        threshold = 2;
+    if (threshold < 8192) {
+        threshold = 8192;
     }
 
     nested_saved = omp_get_nested();

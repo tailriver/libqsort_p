@@ -15,7 +15,7 @@ static int comp_int(const void* a, const void* b)
 }
 
 
-double benchmark(size_t size)
+double benchmark(size_t size, int is_parallel)
 {
     int *array, i;
     double t1, t2;
@@ -28,15 +28,20 @@ double benchmark(size_t size)
     }
 
     /* fill */
-    srand(time(NULL));
     for (i = 0; i < size; ++i) {
         array[i] = rand();
     }
 
     /* sort */
-    t1 = omp_get_wtime();
-    qsort_p(array, size, sizeof *array, comp_int);
-    t2 = omp_get_wtime();
+    if (is_parallel) {
+        t1 = omp_get_wtime();
+        qsort_p(array, size, sizeof *array, comp_int);
+        t2 = omp_get_wtime();
+    } else {
+        t1 = omp_get_wtime();
+        qsort(array, size, sizeof *array, comp_int);
+        t2 = omp_get_wtime();
+    }
 
     free(array);
 
@@ -44,19 +49,58 @@ double benchmark(size_t size)
 }
 
 
-int main(void)
+int main(int argc, char** argv)
 {
-    int size = 4096;
-    double elapsed_time = 0.0;
+    int num_iteration = 5;
+    int size = 8192;
+    double elapsed_time_s_average = 0.0;
+    double elapsed_time_p_average = 0.0;
+    double *elapsed_time_s;
+    double *elapsed_time_p;
 
-    printf("Number of threads: %d\n", omp_get_max_threads());
-    printf("array size | elapsed time [ms]\n");
-    while (elapsed_time < 60) {
-        elapsed_time = benchmark(size);
-        printf("%10i | %10.3f\n", size, elapsed_time * 1000);
+    if (argc == 2) {
+        size = atoi(argv[1]);
+    }
+
+    elapsed_time_s = malloc(num_iteration * sizeof *elapsed_time_s);
+    elapsed_time_p = malloc(num_iteration * sizeof *elapsed_time_p);
+
+    printf("# Number of threads: %d\n", omp_get_max_threads());
+    printf("# Number of iterations: %d\n", num_iteration);
+    printf("# Array length   qsort [s]   qsort_p [s]   Ratio\n");
+
+    while (elapsed_time_s_average < 60 && elapsed_time_p_average < 60) {
+        unsigned int random_seed = (unsigned int) time(NULL);
+        int i;
+
+        srand(random_seed); /* ensure same condition */
+        for (i = 0; i < num_iteration; ++i) {
+            elapsed_time_s[i] = benchmark(size, 0);
+        }
+
+        srand(random_seed); /* ensure same condition */
+        for (i = 0; i < num_iteration; ++i) {
+            elapsed_time_p[i] = benchmark(size, 1);
+        }
+
+        elapsed_time_s_average = 0.0;
+        elapsed_time_p_average = 0.0;
+        for (i = 0; i < num_iteration; ++i) {
+            elapsed_time_s_average += elapsed_time_s[i];
+            elapsed_time_p_average += elapsed_time_p[i];
+        }
+        elapsed_time_s_average /= num_iteration;
+        elapsed_time_p_average /= num_iteration;
+
+        printf("%14i %11.6f   %11.6f %7.3f\n",
+                size, elapsed_time_s_average, elapsed_time_p_average,
+                elapsed_time_s_average / elapsed_time_p_average);
 
         size *= 2;
     }
+
+    free(elapsed_time_s);
+    free(elapsed_time_p);
 
     return EXIT_SUCCESS;
 }
