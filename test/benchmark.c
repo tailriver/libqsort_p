@@ -23,8 +23,7 @@ double benchmark(size_t size, int is_parallel)
     /* allocate */
     array = malloc(size * sizeof *array);
     if (array == NULL) {
-        fprintf(stderr, "malloc error\n");
-        exit(EXIT_FAILURE);
+        return -1.0;
     }
 
     /* fill */
@@ -53,10 +52,8 @@ int main(int argc, char** argv)
 {
     int num_iteration = 5;
     int size = 8192;
-    double elapsed_time_s_average = 0.0;
-    double elapsed_time_p_average = 0.0;
-    double *elapsed_time_s;
-    double *elapsed_time_p;
+    double elapsed_time_s_average, elapsed_time_p_average;
+    double *elapsed_time_s, *elapsed_time_p;
 
     if (argc == 2) {
         size = atoi(argv[1]);
@@ -67,20 +64,22 @@ int main(int argc, char** argv)
 
     printf("# Number of threads: %d\n", omp_get_max_threads());
     printf("# Number of iterations: %d\n", num_iteration);
-    printf("# Array length   qsort [s]   qsort_p [s]   Ratio\n");
+    printf("# Array length   qsort [s]   qsort_p [s]   Speed up\n");
 
-    while (elapsed_time_s_average < 60 && elapsed_time_p_average < 60) {
+    while (1 /* will exit by malloc error */) {
         unsigned int random_seed = (unsigned int) time(NULL);
         int i;
 
         srand(random_seed); /* ensure same condition */
         for (i = 0; i < num_iteration; ++i) {
             elapsed_time_s[i] = benchmark(size, 0);
+            if (elapsed_time_s[i] < 0) goto finish;
         }
 
         srand(random_seed); /* ensure same condition */
         for (i = 0; i < num_iteration; ++i) {
             elapsed_time_p[i] = benchmark(size, 1);
+            if (elapsed_time_p[i] < 0) goto finish;
         }
 
         elapsed_time_s_average = 0.0;
@@ -92,12 +91,14 @@ int main(int argc, char** argv)
         elapsed_time_s_average /= num_iteration;
         elapsed_time_p_average /= num_iteration;
 
-        printf("%14i %11.6f   %11.6f %7.3f\n",
+        printf("%14i %11.6f   %11.6f %10.3f\n",
                 size, elapsed_time_s_average, elapsed_time_p_average,
                 elapsed_time_s_average / elapsed_time_p_average);
 
         size *= 2;
     }
+
+finish:
 
     free(elapsed_time_s);
     free(elapsed_time_p);
