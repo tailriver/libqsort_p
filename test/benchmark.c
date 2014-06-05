@@ -9,8 +9,8 @@ static int comp_int(const void* a, const void* b)
     int aa = *(int*) a;
     int bb = *(int*) b;
 
-    if (aa < bb) return 1;
-    if (aa > bb) return -1;
+    if (aa > bb) return 1;
+    if (aa < bb) return -1;
     return 0;
 }
 
@@ -51,12 +51,12 @@ double benchmark(size_t size, int is_parallel)
 int main(int argc, char** argv)
 {
     int num_iteration = 5;
-    int size = 8192;
+    size_t size = 8192;
     double elapsed_time_s_average, elapsed_time_p_average;
     double *elapsed_time_s, *elapsed_time_p;
 
     if (argc == 2) {
-        size = atoi(argv[1]);
+        size = (size_t)atol(argv[1]);
     }
 
     elapsed_time_s = malloc(num_iteration * sizeof *elapsed_time_s);
@@ -91,8 +91,8 @@ int main(int argc, char** argv)
         elapsed_time_s_average /= num_iteration;
         elapsed_time_p_average /= num_iteration;
 
-        printf("%14i %11.6f   %11.6f %10.3f\n",
-                size, elapsed_time_s_average, elapsed_time_p_average,
+        printf("%14ld %11.6f   %11.6f %10.3f\n",
+                (long)size, elapsed_time_s_average, elapsed_time_p_average,
                 elapsed_time_s_average / elapsed_time_p_average);
 
         size *= 2;

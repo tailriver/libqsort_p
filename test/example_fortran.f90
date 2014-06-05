@@ -51,11 +51,11 @@ program main
         integer, intent(in) :: a, b
 
         if (a < b) then
-            comp_int = 1
+            comp_int = -1
         else if (a == b) then
             comp_int = 0
         else
-            comp_int = -1
+            comp_int = 1
         endif
 
     end function

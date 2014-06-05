@@ -77,10 +77,10 @@ static void qsort_p_recursive(
     i = beg;
     j = end;
     while (1) {
-        while (i <= end && compar((char*)base + i * size, (char*)base + piv * size) > 0) {
+        while (i <= end && compar((char*)base + i * size, (char*)base + piv * size) < 0) {
             ++i;
         }
-        while (j >= beg && compar((char*)base + j * size, (char*)base + piv * size) < 0) {
+        while (j >= beg && compar((char*)base + j * size, (char*)base + piv * size) > 0) {
             --j;
         }
 
@@ -141,5 +141,5 @@ void FC_FUNC(qsort_p, QSORT_P)(
         int* size,
         int (*compar)(const void*, const void*))
 {
-    qsort_p(base, *num, *size, compar);
+    qsort_p(base, (size_t)*num, (size_t)*size, compar);
 }
