@@ -68,10 +68,10 @@ static void qsort_p_recursive(
         } else {
             piv = end;
         }
-        free(comp);
     } else {
         piv = end;
     }
+    free(comp);
 
     /* sort */
     i = beg;
